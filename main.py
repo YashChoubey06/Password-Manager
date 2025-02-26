@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 import random
 import pyperclip
+import json
 
 # ---------------------------- PASSWORD GENERATOR ------------------------------- #
 
@@ -40,18 +41,61 @@ def save():
     user = user_entry.get()
     web = website_entry.get()
 
+    new_data = {
+        web : {
+            "email" : user,
+            "password" : passw
+        }
+    }
+
     if len(passw) == 0 or len(user) == 0 or len(web) == 0:
-        empty_check = messagebox.showinfo(title="Oops", message="Please dont leave any fields empty")
+        messagebox.showinfo(title="Oops", message="Please dont leave any fields empty")
     else:
-        is_ok = messagebox.askokcancel(title=web, message= f"These are the details entered; \nEmail: {user} \nPassword: {passw} \nIs it okay to save?")
+        try:
+            with open("data.json", "r") as file:
+                data = json.load(file)
 
-        if is_ok ==True:
-            with open ("data.txt", "a") as file:
-                file.write(f"{web} | {user} | {passw} \n")
+        except FileNotFoundError:
+            with open("data.json", "w") as file:
+                json.dump(new_data,file, indent = 4)
 
-            user_entry.delete(0, END)
+        else:
+            data.update(new_data)
+
+            with open("data.json", "w") as file:
+                json.dump(data, file, indent = 4)
+
+        finally:
             pass_entry.delete(0, END)
             website_entry.delete(0, END)
+
+# ---------------------------- Search ------------------------------- #
+
+def find_pass():
+    web_search = website_entry.get()
+    
+    if web_search == "":
+        messagebox.showinfo(title="Oops", message="The website entry cannot be blank!")
+    else:
+        try:
+            with open("data.json", "r") as file:
+                data_file = json.load(file)
+
+        except FileNotFoundError:
+            messagebox.showinfo(title="Oops", message="The Password database is empty D:")
+
+        else:
+            try:
+                req_pass = data_file[web_search]['password']
+                req_mail = data_file[web_search]['email']
+
+            except KeyError:
+                messagebox.showinfo(title="Oops", message="There's no password saved for that domain D:")
+
+            else:
+                messagebox.showinfo(title=web_search, message=f"Email: {req_mail}\nPassword: {req_pass}")
+
+
 
 # ---------------------------- UI SETUP ------------------------------- #
 
@@ -73,8 +117,8 @@ user_label.grid(column = 0, row = 2)
 pass_label = Label(text="Password:")
 pass_label.grid(column = 0, row = 3)
 
-website_entry = Entry(width= 35)
-website_entry.grid(column = 1, row = 1,  columnspan = 2)
+website_entry = Entry(width= 21)
+website_entry.grid(column = 1, row = 1)
 website_entry.focus()
 
 user_entry = Entry(width= 35)
@@ -87,8 +131,12 @@ pass_entry.grid(column = 1, row = 3)
 gen_pass = Button(text= "Generate One", width = 11, command=random_password)
 gen_pass.grid(column = 2, row = 3)
 
-add_button = Button(text="Add", width=36, command= save)
+search_button = Button(text="Search", width = 11, command = find_pass)
+search_button.grid(column = 2, row = 1)
+
+add_button = Button(text="Add", width=30, command= save)
 add_button.grid(column = 1, row = 4, columnspan = 2)
 
 
 window.mainloop()
+
